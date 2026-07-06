@@ -7,7 +7,7 @@
     <application
         android:allowBackup="false"
         android:extractNativeLibs="true"
-        android:label="AV3A Player"
+        android:label="测试版2"
         android:resizeableActivity="true"
         android:theme="@style/AppTheme">
         <activity
