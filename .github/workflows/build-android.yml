@@ -53,9 +53,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Make shell scripts executable
+      - name: Make build scripts executable
+        shell: bash
         run: |
-          find . -type f -name "*.sh" -print -exec chmod +x {} \;
+          while IFS= read -r script; do
+            echo "chmod +x ${script}"
+            chmod +x "${script}"
+          done < <(find . -type f -name "*.sh" | sort)
+
+          chmod +x ffmpeg/ffmpeg-6.1/configure
 
       - name: Install build tools
         run: |
