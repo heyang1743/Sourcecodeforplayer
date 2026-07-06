@@ -118,7 +118,19 @@ jobs:
             local ffmpeg_cpu="$1"
             local android_abi="$2"
             local src="ffmpeg/ffmpeg-6.1/android/${ffmpeg_cpu}"
+            local prebuilt="android_app/prebuilt_jniLibs/${android_abi}"
             local dst="android_app/app/src/main/jniLibs/${android_abi}"
+
+            if [[ -d "${prebuilt}" ]] && find "${prebuilt}" -maxdepth 1 -type f -name '*.so' -print -quit | grep -q .; then
+              echo "Use prebuilt JNI libraries for ${android_abi}: ${prebuilt}"
+              mkdir -p "${dst}"
+              cp -Lf "${prebuilt}"/*.so "${dst}/"
+              local cxx_shared="${ANDROID_NDK_HOME}/sources/cxx-stl/llvm-libc++/libs/${android_abi}/libc++_shared.so"
+              if [[ -f "${cxx_shared}" ]]; then
+                cp -Lf "${cxx_shared}" "${dst}/"
+              fi
+              return
+            fi
 
             if [[ ! -d "${src}" ]]; then
               echo "Skip missing ABI output: ${src}"
@@ -162,7 +174,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist/android
-          cp -f android_app/app/build/outputs/apk/debug/app-debug.apk "dist/android/av3a-player-${BUILD_ABIS}.apk"
+          cp -f android_app/app/build/outputs/apk/debug/app-debug.apk "dist/android/测试版2.apk"
 
       - name: Show artifact contents
         run: |
