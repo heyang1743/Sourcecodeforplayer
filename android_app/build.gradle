@@ -1,38 +1,9 @@
-plugins {
-    id "com.android.application"
-}
-
-android {
-    namespace "com.av3a.player"
-    compileSdk 35
-
-    defaultConfig {
-        applicationId "com.av3a.player"
-        minSdk 24
-        targetSdk 35
-        versionCode 1
-        versionName "0.1.0"
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
     }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+    dependencies {
+        classpath "com.android.tools.build:gradle:8.5.2"
     }
-
-    packaging {
-        jniLibs {
-            useLegacyPackaging = true
-        }
-    }
-
-    sourceSets {
-        main {
-            jniLibs.srcDirs = ["src/main/jniLibs"]
-            assets.srcDirs = ["src/main/assets"]
-        }
-    }
-}
-
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = "UTF-8"
 }

@@ -1,6 +1,4 @@
-plugins {
-    id "com.android.application"
-}
+apply plugin: "com.android.application"
 
 android {
     namespace "com.av3a.player"
@@ -31,4 +29,8 @@ android {
             assets.srcDirs = ["src/main/assets"]
         }
     }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
 }
