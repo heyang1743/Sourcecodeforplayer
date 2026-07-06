@@ -21,6 +21,9 @@ public class MainActivity extends Activity {
 
     private TextView statusView;
     private VideoView videoView;
+    private Uri currentUri;
+    private boolean videoLoaded;
+    private boolean playWhenPrepared;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,8 +47,28 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(48)));
 
         videoView = new VideoView(this);
+        configureVideoView();
         root.addView(videoView, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+
+        LinearLayout controls = new LinearLayout(this);
+        controls.setOrientation(LinearLayout.HORIZONTAL);
+        controls.setGravity(Gravity.CENTER);
+
+        Button startButton = createControlButton("Start");
+        startButton.setOnClickListener(v -> startPlayback());
+        controls.addView(startButton, controlLayoutParams(0));
+
+        Button pauseButton = createControlButton("Pause");
+        pauseButton.setOnClickListener(v -> pausePlayback());
+        controls.addView(pauseButton, controlLayoutParams(dp(8)));
+
+        Button stopButton = createControlButton("Stop");
+        stopButton.setOnClickListener(v -> stopPlayback());
+        controls.addView(stopButton, controlLayoutParams(dp(8)));
+
+        root.addView(controls, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(54)));
 
         statusView = new TextView(this);
         statusView.setTextSize(13);
@@ -78,16 +101,68 @@ public class MainActivity extends Activity {
             return;
         }
 
-        videoView.setVideoURI(uri);
+        stopPlayback();
+        currentUri = uri;
+        appendStatus("Selected: " + uri);
+    }
+
+    private void configureVideoView() {
         videoView.setOnPreparedListener(mp -> {
             mp.setLooping(false);
-            videoView.start();
+            if (playWhenPrepared) {
+                videoView.start();
+                appendStatus("Playback started");
+            } else {
+                appendStatus("Media prepared");
+            }
+        });
+        videoView.setOnCompletionListener(mp -> {
+            playWhenPrepared = false;
+            appendStatus("Playback completed");
         });
         videoView.setOnErrorListener((mp, what, extra) -> {
+            playWhenPrepared = false;
+            videoLoaded = false;
             appendStatus("System player failed: what=" + what + ", extra=" + extra);
             return false;
         });
-        appendStatus("Selected: " + uri);
+    }
+
+    private void startPlayback() {
+        if (currentUri == null) {
+            appendStatus("Select an MP4 file first");
+            return;
+        }
+
+        playWhenPrepared = true;
+        if (!videoLoaded) {
+            videoView.setVideoURI(currentUri);
+            videoLoaded = true;
+            appendStatus("Preparing media");
+            return;
+        }
+
+        videoView.start();
+        appendStatus("Playback resumed");
+    }
+
+    private void pausePlayback() {
+        playWhenPrepared = false;
+        if (videoView.isPlaying()) {
+            videoView.pause();
+            appendStatus("Playback paused");
+            return;
+        }
+        appendStatus("Playback is not running");
+    }
+
+    private void stopPlayback() {
+        playWhenPrepared = false;
+        if (videoLoaded || videoView.isPlaying()) {
+            videoView.stopPlayback();
+            videoLoaded = false;
+            appendStatus("Playback stopped");
+        }
     }
 
     private String buildStartupStatus() {
@@ -132,6 +207,20 @@ public class MainActivity extends Activity {
 
     private void appendStatus(String text) {
         statusView.append("\n" + text);
+    }
+
+    private Button createControlButton(String text) {
+        Button button = new Button(this);
+        button.setText(text);
+        button.setAllCaps(false);
+        return button;
+    }
+
+    private LinearLayout.LayoutParams controlLayoutParams(int leftMargin) {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+        params.leftMargin = leftMargin;
+        return params;
     }
 
     private int dp(int value) {
