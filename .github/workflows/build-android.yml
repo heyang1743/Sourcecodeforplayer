@@ -1,0 +1,97 @@
+name: Android FFmpeg AV3A
+
+on:
+  workflow_dispatch:
+    inputs:
+      abi:
+        description: Android ABI to build
+        required: true
+        default: arm64-v8a
+        type: choice
+        options:
+          - arm64-v8a
+          - armeabi-v7a
+          - all
+      build_programs:
+        description: Build Android ffmpeg and ffprobe command-line binaries
+        required: true
+        default: "1"
+        type: choice
+        options:
+          - "1"
+          - "0"
+      enable_arc_video:
+        description: Also enable bundled AVS2/AVS3 video decoders
+        required: true
+        default: "0"
+        type: choice
+        options:
+          - "0"
+          - "1"
+  push:
+    paths:
+      - ".github/workflows/android-ffmpeg.yml"
+      - "ffmpeg/ffmpeg-6.1/**"
+      - "ffmpeg/dependency/android/**"
+      - "ffmpeg/dependency/include/**"
+
+jobs:
+  build:
+    name: Build FFmpeg for Android
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+
+    env:
+      NDK_VERSION: r20b
+      NDK_DIR: ${{ github.workspace }}/.android-ndk/android-ndk-r20b
+      BUILD_ABIS: ${{ github.event.inputs.abi || 'arm64-v8a' }}
+      BUILD_PROGRAMS: ${{ github.event.inputs.build_programs || '1' }}
+      ENABLE_ARC_VIDEO: ${{ github.event.inputs.enable_arc_video || '0' }}
+      API: "24"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential curl unzip pkg-config yasm nasm
+
+      - name: Cache Android NDK
+        id: cache-ndk
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.NDK_DIR }}
+          key: android-ndk-${{ env.NDK_VERSION }}-linux-x86_64
+
+      - name: Download Android NDK
+        if: steps.cache-ndk.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p "$(dirname "$NDK_DIR")"
+          curl -L "https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux-x86_64.zip" -o /tmp/android-ndk.zip
+          unzip -q /tmp/android-ndk.zip -d /tmp
+          mv "/tmp/android-ndk-${NDK_VERSION}" "$NDK_DIR"
+
+      - name: Build
+        env:
+          ANDROID_NDK_HOME: ${{ env.NDK_DIR }}
+        run: |
+          cd ffmpeg/ffmpeg-6.1
+          chmod +x ./build_android.sh
+          ./build_android.sh
+
+      - name: Show artifact contents
+        run: |
+          cd ffmpeg/ffmpeg-6.1
+          find android -maxdepth 4 -type f | sort
+          tar -czf android-av3a-ffmpeg.tar.gz android
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-av3a-ffmpeg-${{ env.BUILD_ABIS }}
+          if-no-files-found: error
+          path: |
+            ffmpeg/ffmpeg-6.1/android
+            ffmpeg/ffmpeg-6.1/android-av3a-ffmpeg.tar.gz
