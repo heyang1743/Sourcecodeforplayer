@@ -83,6 +83,9 @@ jobs:
           chmod +x *.sh
           chmod +x ./build_android.sh
           ./build_android.sh
+    
+          find . -name "*.sh" -exec chmod +x {} \;
+          find . -name "configure" -exec chmod +x {} \;
 
       - name: Show artifact contents
         run: |
