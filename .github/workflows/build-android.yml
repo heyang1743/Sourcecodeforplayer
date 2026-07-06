@@ -78,6 +78,9 @@ jobs:
           ANDROID_NDK_HOME: ${{ env.NDK_DIR }}
         run: |
           cd ffmpeg/ffmpeg-6.1
+          # 修复configure无执行权限
+          chmod +x configure
+          chmod +x *.sh
           chmod +x ./build_android.sh
           ./build_android.sh
 
